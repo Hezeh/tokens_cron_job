@@ -25,44 +25,46 @@ async def main():
     items_ref = db.collection(u'items').stream()
     print(items_ref)
     for doc in items_ref:
-        print(f'{doc.id} => {doc.to_dict()}')
-        data = doc.to_dict()
-        if 'lastRenewal' in data:
-            lastRenewal = data['lastRenewal']
-            if 'userId' in data:
-                merchantId = data['userId']
-                if 'category' in data:
-                    category = data['category']
-                    timestamp = datetime.datetime.fromtimestamp(time.mktime(time.strptime(lastRenewal, '%Y-%m-%dT%H:%M:%S.%f')))
-                    renewalTime = datetime.datetime.now() - datetime.timedelta(days=7)
-                    if timestamp > renewalTime:
-                        print("Renew")
-                        # Get the tokens for this specific user
-                        tokensBalance = get_tokens(merchantId)
-                        # Get the tokens needed
-                        tokensRequired = get_category_tokens(category)
-                        # Check if the tokens are enough
-                        if tokensBalance > tokensRequired:
-                            # Bill the client
-                            # Update the status to active & lastRenewal to current timestamp
-                            doc.set({
-                                'lastRenewal': datetime.datetime.now().isoformat(),
-                                'isActive': True,
-                            }, merge=True)
-                            # Set new number of tokens
-                            newTokensBalance = tokensBalance - tokensRequired
-                            db.collection(u'profile').document(merchantId).set({
-                                'tokensBalance': newTokensBalance
-                            }, merge=True)
-                        else:
-                            # TODO If not enough tokens, send an email & notification to client 
-                            # to let them know the don't have enough tokens/buy more tokens.
-                            doc.set({
-                                'isActive': False
-                            }, merge=True)
-                            return
-                    else:
-                        return
+        print(f"{doc.id} => {doc.to_dict()}")
+    # for doc in items_ref:
+    #     print(f'{doc.id} => {doc.to_dict()}')
+    #     data = doc.to_dict()
+    #     if 'lastRenewal' in data:
+    #         lastRenewal = data['lastRenewal']
+    #         if 'userId' in data:
+    #             merchantId = data['userId']
+    #             if 'category' in data:
+    #                 category = data['category']
+    #                 timestamp = datetime.datetime.fromtimestamp(time.mktime(time.strptime(lastRenewal, '%Y-%m-%dT%H:%M:%S.%f')))
+    #                 renewalTime = datetime.datetime.now() - datetime.timedelta(days=7)
+    #                 if timestamp > renewalTime:
+    #                     print("Renew")
+    #                     # Get the tokens for this specific user
+    #                     tokensBalance = get_tokens(merchantId)
+    #                     # Get the tokens needed
+    #                     tokensRequired = get_category_tokens(category)
+    #                     # Check if the tokens are enough
+    #                     if tokensBalance > tokensRequired:
+    #                         # Bill the client
+    #                         # Update the status to active & lastRenewal to current timestamp
+    #                         doc.set({
+    #                             'lastRenewal': datetime.datetime.now().isoformat(),
+    #                             'isActive': True,
+    #                         }, merge=True)
+    #                         # Set new number of tokens
+    #                         newTokensBalance = tokensBalance - tokensRequired
+    #                         db.collection(u'profile').document(merchantId).set({
+    #                             'tokensBalance': newTokensBalance
+    #                         }, merge=True)
+    #                     else:
+    #                         # TODO If not enough tokens, send an email & notification to client 
+    #                         # to let them know the don't have enough tokens/buy more tokens.
+    #                         doc.set({
+    #                             'isActive': False
+    #                         }, merge=True)
+    #                         return
+    #                 else:
+    #                     return
     return {}
 
 def get_tokens(userId):
