@@ -23,6 +23,7 @@ async def main():
     # Get the the docs where lastRenewal > current timestamp - 7 days and status is active.
     print('Starting func')
     items_ref = db.collection(u'items').stream()
+    print(items_ref)
     for doc in items_ref:
         print(f'{doc.id} => {doc.to_dict()}')
         data = doc.to_dict()
