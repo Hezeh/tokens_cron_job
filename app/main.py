@@ -21,6 +21,7 @@ app = FastAPI()
 @app.post('/')
 async def main():
     # Get the the docs where lastRenewal > current timestamp - 7 days and status is active.
+    print('Starting func')
     items_ref = db.collection(u'items').stream()
     for doc in items_ref:
         print(f'{doc.id} => {doc.to_dict()}')
