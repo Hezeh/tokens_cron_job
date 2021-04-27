@@ -6,12 +6,12 @@ import time
 import datetime
 import os
 
-project_id = os.environ.get('PROJECT_ID')
+# project_id = os.environ.get('PROJECT_ID')
 
 # Use the application default credentials
 cred = credentials.ApplicationDefault()
 firebase_admin.initialize_app(cred, {
-  'projectId': project_id,
+  'projectId': 'beammart',
 })
 
 db = firestore.client()
@@ -22,54 +22,73 @@ app = FastAPI()
 async def main():
     # Get the the docs where lastRenewal > current timestamp - 7 days and status is active.
     print('Starting func')
-    items_ref = db.collection(u'items').stream()
-    print(items_ref)
-    for doc in items_ref:
-        print(f"{doc.id} => {doc.to_dict()}")
-    # for doc in items_ref:
-    #     print(f'{doc.id} => {doc.to_dict()}')
-    #     data = doc.to_dict()
-    #     if 'lastRenewal' in data:
-    #         lastRenewal = data['lastRenewal']
-    #         if 'userId' in data:
-    #             merchantId = data['userId']
-    #             if 'category' in data:
-    #                 category = data['category']
-    #                 timestamp = datetime.datetime.fromtimestamp(time.mktime(time.strptime(lastRenewal, '%Y-%m-%dT%H:%M:%S.%f')))
-    #                 renewalTime = datetime.datetime.now() - datetime.timedelta(days=7)
-    #                 if timestamp > renewalTime:
-    #                     print("Renew")
-    #                     # Get the tokens for this specific user
-    #                     tokensBalance = get_tokens(merchantId)
-    #                     # Get the tokens needed
-    #                     tokensRequired = get_category_tokens(category)
-    #                     # Check if the tokens are enough
-    #                     if tokensBalance > tokensRequired:
-    #                         # Bill the client
-    #                         # Update the status to active & lastRenewal to current timestamp
-    #                         doc.set({
-    #                             'lastRenewal': datetime.datetime.now().isoformat(),
-    #                             'isActive': True,
-    #                         }, merge=True)
-    #                         # Set new number of tokens
-    #                         newTokensBalance = tokensBalance - tokensRequired
-    #                         db.collection(u'profile').document(merchantId).set({
-    #                             'tokensBalance': newTokensBalance
-    #                         }, merge=True)
-    #                     else:
-    #                         # TODO If not enough tokens, send an email & notification to client 
-    #                         # to let them know the don't have enough tokens/buy more tokens.
-    #                         doc.set({
-    #                             'isActive': False
-    #                         }, merge=True)
-    #                         return
-    #                 else:
-    #                     return
+    # doc_ref = db.collection(u'items').document(u'0bc72fe0-2a44-4a38-b21e-aa44d664ca02')
+    # doc = doc_ref.get()
+    # if doc.exists:
+    #     print(f'Document data: {doc.to_dict()}')
+    # else:
+    #     print(u'No such document!')
+    items_ref = db.collection(u'items')
+    docs = items_ref.stream()
+    # for doc in docs:
+    #     print(f"{doc.id} => {doc.to_dict()}")
+    for doc in docs:
+        # print(f'{doc.id} => {doc.to_dict()}')
+        data = doc.to_dict()
+        if 'lastRenewal' in data:
+            print("Last Renewal in data")
+            lastRenewal = data['lastRenewal']
+            # print(data['lastRenewal'])
+            # timestamp = datetime.datetime.fromtimestamp(time.mktime(time.strptime(lastRenewal, '%Y-%m-%dT%H:%M:%S.%f')))
+            # renewalTime = datetime.datetime.now() - datetime.timedelta(days=7)
+            # print(renewalTime)
+
+            if 'userId' in data:
+                print("User Id in data")
+                merchantId = data['userId']
+                if 'category' in data:
+                    print("Category in data")
+                    category = data['category']
+                    timestamp = datetime.datetime.fromtimestamp(time.mktime(time.strptime(lastRenewal, '%Y-%m-%dT%H:%M:%S.%f')))
+                    renewalTime = datetime.datetime.now() - datetime.timedelta(days=7)
+                    print(timestamp)
+                    print(renewalTime)
+                    # Should be less than
+                    if timestamp < renewalTime:
+                        print("Renew")
+                        # Get the tokens for this specific user
+                        tokensBalance = get_tokens(merchantId)
+                        # Get the tokens needed
+                        tokensRequired = get_category_tokens(category)
+                        # Check if the tokens are enough
+                        if tokensBalance > tokensRequired:
+                            print("Checking if user has required tokens")
+                            # Bill the client
+                            # Update the status to active & lastRenewal to current timestamp
+                            docRef = db.collection(u'items').document(f'{doc.id}')
+                            docRef.set({
+                                'lastRenewal': datetime.datetime.now().isoformat(),
+                                'isActive': True,
+                            }, merge=True)
+                            # Set new number of tokens
+                            newTokensBalance = tokensBalance - tokensRequired
+                            db.collection(u'profile').document(merchantId).set({
+                                'tokensBalance': newTokensBalance
+                            }, merge=True)
+                        else:
+                            # TODO If not enough tokens, send an email & notification to client 
+                            # to let them know the don't have enough tokens/buy more tokens.
+                            doc.set({
+                                'isActive': False
+                            }, merge=True)
+                            return
+                    else:
+                        return
     return {}
 
 def get_tokens(userId):
     merchant_doc = db.collection(u'profile').document(userId).get()
-    if merchant_doc.exists():
+    if merchant_doc.exists:
         # Get the current tokens balance
         print(merchant_doc.to_dict())
         dict_doc = merchant_doc.to_dict()
@@ -82,7 +101,7 @@ def get_tokens(userId):
 
 def get_category_tokens(category):
     tokens_doc = db.collection(u'tokens').document('categories').get()
-    if tokens_doc.exists():
+    if tokens_doc.exists:
         print(tokens_doc.to_dict())
         data = tokens_doc.to_dict()
         # Check if the field is available
