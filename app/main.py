@@ -20,42 +20,22 @@ app = FastAPI()
 
 @app.post('/')
 async def main():
-    # Get the the docs where lastRenewal > current timestamp - 7 days and status is active.
-    print('Starting func')
-    # doc_ref = db.collection(u'items').document(u'0bc72fe0-2a44-4a38-b21e-aa44d664ca02')
-    # doc = doc_ref.get()
-    # if doc.exists:
-    #     print(f'Document data: {doc.to_dict()}')
-    # else:
-    #     print(u'No such document!')
     items_ref = db.collection(u'items')
     docs = items_ref.stream()
-    # for doc in docs:
-    #     print(f"{doc.id} => {doc.to_dict()}")
     for doc in docs:
         # print(f'{doc.id} => {doc.to_dict()}')
         data = doc.to_dict()
         if 'lastRenewal' in data:
-            print("Last Renewal in data")
             lastRenewal = data['lastRenewal']
-            # print(data['lastRenewal'])
-            # timestamp = datetime.datetime.fromtimestamp(time.mktime(time.strptime(lastRenewal, '%Y-%m-%dT%H:%M:%S.%f')))
-            # renewalTime = datetime.datetime.now() - datetime.timedelta(days=7)
-            # print(renewalTime)
 
             if 'userId' in data:
-                print("User Id in data")
                 merchantId = data['userId']
                 if 'category' in data:
-                    print("Category in data")
                     category = data['category']
                     timestamp = datetime.datetime.fromtimestamp(time.mktime(time.strptime(lastRenewal, '%Y-%m-%dT%H:%M:%S.%f')))
                     renewalTime = datetime.datetime.now() - datetime.timedelta(days=7)
-                    print(timestamp)
-                    print(renewalTime)
                     # Should be less than
                     if timestamp < renewalTime:
-                        print("Renew")
                         # Get the tokens for this specific user
                         tokensBalance = get_tokens(merchantId)
                         # Get the tokens needed
